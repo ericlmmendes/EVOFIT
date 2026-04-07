@@ -18,9 +18,16 @@
       0% { opacity: 0; transform: scale(0.95); }
       100% { opacity: 1; transform: scale(1); }
     }
+    .img-maximized { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+    .img-maximized img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 1rem; }
   </style>
 </head>
 <body class="min-h-screen flex selection:bg-emerald-500/30">
+
+  <!-- OVERLAY IMAGEM MAXIMIZADA -->
+  <div id="img-overlay" class="hidden img-maximized" onclick="this.classList.add('hidden')">
+    <img id="img-expanded" src="">
+  </div>
 
   <!-- TELA DE LOGIN ADMIN -->
   <div id="admin-login-screen" class="fixed inset-0 bg-zinc-950 z-[100] flex items-center justify-center p-4">
@@ -62,8 +69,11 @@
         <h1 class="logo-font text-2xl font-bold tracking-tighter text-white">EVO <span class="text-emerald-400">ADMIN</span></h1>
       </div>
       <nav class="flex-1 p-4 space-y-2">
-        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-semibold transition">
+        <button onclick="mudarAba('clientes')" id="nav-clientes" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-semibold transition">
           <i class="fa-solid fa-users"></i> Gestão de Clientes
+        </button>
+        <button onclick="mudarAba('produtos')" id="nav-produtos" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 transition">
+          <i class="fa-solid fa-cart-shopping"></i> Gestão da Loja
         </button>
       </nav>
       <div class="p-4 border-t border-zinc-800">
@@ -81,7 +91,7 @@
         <div class="flex justify-between items-center mb-8">
           <div>
             <h2 class="text-3xl font-bold text-white">Clientes Matriculados</h2>
-            <p class="text-zinc-400 text-sm mt-1">Crie senhas, gerencie acessos e pagamentos dos alunos.</p>
+            <p class="text-zinc-400 text-sm mt-1">Gerencie acessos e mensalidades dos alunos.</p>
           </div>
           <button onclick="abrirModalCliente()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl text-white font-bold flex items-center gap-2 transition">
             <i class="fa-solid fa-plus"></i> Novo Cliente
@@ -98,9 +108,34 @@
                 <th class="px-6 py-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody id="lista-clientes" class="divide-y divide-zinc-800/50">
-              <!-- Renderizado via JS -->
-            </tbody>
+            <tbody id="lista-clientes" class="divide-y divide-zinc-800/50"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA: PRODUTOS -->
+      <div id="view-produtos" class="hidden">
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h2 class="text-3xl font-bold text-white">Estoque da Loja</h2>
+            <p class="text-zinc-400 text-sm mt-1">Adicione ou remova produtos da vitrine do App.</p>
+          </div>
+          <button onclick="abrirModalProduto()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl text-white font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-plus"></i> Novo Produto
+          </button>
+        </div>
+
+        <div class="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+          <table class="w-full text-left text-sm text-zinc-300">
+            <thead class="bg-zinc-950 text-zinc-500 uppercase text-xs border-b border-zinc-800">
+              <tr>
+                <th class="px-6 py-4">Produto</th>
+                <th class="px-6 py-4">Categoria</th>
+                <th class="px-6 py-4">Preço</th>
+                <th class="px-6 py-4 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="lista-produtos-admin" class="divide-y divide-zinc-800/50"></tbody>
           </table>
         </div>
       </div>
@@ -117,11 +152,24 @@
       </div>
       
       <div class="p-6 overflow-y-auto space-y-4 flex-1">
+        <!-- Visualização da Foto -->
+        <div class="flex flex-col items-center gap-2">
+            <div onclick="maximizarImg(document.getElementById('cli-preview').src)" class="w-24 h-24 rounded-full border-4 border-emerald-500/30 overflow-hidden bg-zinc-950 cursor-zoom-in">
+                <img id="cli-preview" src="perfil.jpg" class="w-full h-full object-cover">
+            </div>
+            <p class="text-[10px] text-zinc-500">Clique na foto para ampliar</p>
+        </div>
+
         <input type="hidden" id="cli-id">
         
         <div>
           <label class="text-xs text-zinc-400 ml-1 mb-1 block">Nome Completo</label>
           <input id="cli-nome" type="text" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 focus:border-emerald-500 text-white focus:outline-none transition">
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 ml-1 mb-1 block">URL Foto (Opcional)</label>
+          <input id="cli-foto" type="text" oninput="document.getElementById('cli-preview').src = this.value || 'perfil.jpg'" placeholder="https://..." class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 focus:border-emerald-500 text-white focus:outline-none transition">
         </div>
         
         <div class="grid grid-cols-2 gap-4">
@@ -180,11 +228,6 @@
             </select>
           </div>
         </div>
-        
-        <div>
-          <label class="text-xs text-zinc-400 ml-1 mb-1 block">URL Foto (Opcional)</label>
-          <input id="cli-foto" type="text" placeholder="https://..." class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 focus:border-emerald-500 text-white focus:outline-none transition">
-        </div>
       </div>
       
       <div class="p-6 border-t border-zinc-800 shrink-0 bg-zinc-900">
@@ -195,50 +238,94 @@
     </div>
   </div>
 
+  <!-- MODAL: PRODUTO -->
+  <div id="modal-produto" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+    <div class="bg-zinc-900 rounded-3xl w-full max-w-sm border border-zinc-800 modal-enter">
+      <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">Dados do Produto</h3>
+        <button onclick="fecharModalProduto()" class="text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="hidden" id="prod-id">
+        <input id="prod-nome" type="text" placeholder="Nome do Produto" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-white">
+        <input id="prod-preco" type="number" step="0.01" placeholder="Preço (R$)" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-white">
+        <select id="prod-cat" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-white">
+          <option value="Pre-Treino">Pré-Treino</option>
+          <option value="Pos-Treino">Pós-Treino</option>
+          <option value="Durante-Treino">Durante o Treino</option>
+          <option value="Equipamento">Equipamento</option>
+        </select>
+        <input id="prod-foto" type="text" placeholder="URL da Imagem" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-white">
+        <input id="prod-link" type="text" placeholder="Link de Compra" class="w-full p-3 bg-zinc-950 rounded-xl border border-zinc-800 text-white">
+        <button onclick="salvarProduto()" class="w-full bg-emerald-600 py-3 rounded-xl font-bold">Salvar Produto</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { DB } from './bd.js';
     import { adminCredentials } from './acesso.js';
 
     let clientesGlobais = [];
+    let produtosGlobais = [];
 
     window.efetuarLogin = () => {
       const u = document.getElementById('login-user').value;
       const p = document.getElementById('login-pass').value;
-      const err = document.getElementById('login-error');
-
       if(u === adminCredentials.usuario && p === adminCredentials.senha) {
         document.getElementById('admin-login-screen').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
         carregarDados();
       } else {
-        err.classList.remove('hidden');
+        document.getElementById('login-error').classList.remove('hidden');
       }
     };
 
-    window.sairAdmin = () => {
-      document.getElementById('login-user').value = '';
-      document.getElementById('login-pass').value = '';
-      document.getElementById('admin-login-screen').classList.remove('hidden');
-      document.getElementById('admin-dashboard').classList.add('hidden');
-    };
+    window.sairAdmin = () => location.reload();
 
     async function carregarDados() {
       clientesGlobais = await DB.getClientes();
+      produtosGlobais = await DB.getProdutos();
+      verificarVencimentosAutomaticos();
       renderizarClientes();
+      renderizarProdutosAdmin();
+    }
+
+    function verificarVencimentosAutomaticos() {
+        const hoje = new Date().getDate();
+        clientesGlobais.forEach(async (c) => {
+            let mudou = false;
+            // Se hoje é o dia do vencimento -> Bloqueia
+            if (parseInt(c.vencimento) === hoje && c.status !== 'bloqueado') {
+                c.status = 'bloqueado';
+                mudou = true;
+            }
+            // Se passou do dia -> Pendente
+            if (hoje > parseInt(c.vencimento) && c.pagamento !== 'pendente') {
+                c.pagamento = 'pendente';
+                mudou = true;
+            }
+            if (mudou) await DB.updateCliente(c.id, c);
+        });
+    }
+
+    window.mudarAba = (aba) => {
+        document.getElementById('view-clientes').classList.toggle('hidden', aba !== 'clientes');
+        document.getElementById('view-produtos').classList.toggle('hidden', aba !== 'produtos');
+        document.getElementById('nav-clientes').className = aba === 'clientes' ? "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-semibold transition" : "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 transition";
+        document.getElementById('nav-produtos').className = aba === 'produtos' ? "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-semibold transition" : "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 transition";
+    }
+
+    window.maximizarImg = (src) => {
+        const overlay = document.getElementById('img-overlay');
+        document.getElementById('img-expanded').src = src;
+        overlay.classList.remove('hidden');
     }
 
     function renderizarClientes() {
       const tbody = document.getElementById('lista-clientes');
-      if (clientesGlobais.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-zinc-500">Nenhum cliente cadastrado.</td></tr>`;
-        return;
-      }
-
-      const niveis = ["Iniciante", "Intermediário", "Avançado"];
-      const generos = ["Masc", "Fem"];
-
       tbody.innerHTML = clientesGlobais.map(c => `
-        <tr class="hover:bg-zinc-800/30 transition group">
+        <tr onclick="editarCliente('${c.id}')" class="hover:bg-zinc-800/30 transition group cursor-pointer">
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
               <img src="${c.foto || 'perfil.jpg'}" class="w-10 h-10 rounded-full object-cover border border-zinc-700" onerror="this.src='perfil.jpg'">
@@ -249,20 +336,15 @@
             </div>
           </td>
           <td class="px-6 py-4">
-            <div class="flex flex-col gap-2 items-start">
-              <span class="bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-semibold text-zinc-300 border border-zinc-700 uppercase">${niveis[c.nivel] || 'Iniciante'} • ${generos[c.genero] || 'Masc'}</span>
-              ${c.status === 'bloqueado' ? '<span class="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[10px] font-bold border border-red-500/20"><i class="fa-solid fa-lock mr-1"></i>Bloqueado</span>' : '<span class="bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-500/20"><i class="fa-solid fa-unlock mr-1"></i>Liberado</span>'}
-            </div>
+            <span class="bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-semibold text-zinc-300 border border-zinc-700 uppercase">${["Iniciante", "Intermediário", "Avançado"][c.nivel] || 'Iniciante'}</span>
+            ${c.status === 'bloqueado' ? '<span class="text-red-500 text-[10px] ml-2 font-bold">BLOQUEADO</span>' : ''}
           </td>
           <td class="px-6 py-4">
-            <div class="flex flex-col gap-1 items-start">
-              <span class="font-medium text-white">R$ ${parseFloat(c.valorMensalidade||0).toFixed(2)} <span class="text-zinc-500 text-xs font-normal">(Dia ${c.vencimento})</span></span>
-              ${c.pagamento === 'pendente' ? '<span class="bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded text-[10px] font-bold border border-orange-500/20 uppercase"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Pendente</span>' : '<span class="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-500/20 uppercase"><i class="fa-solid fa-check mr-1"></i>Em Dia</span>'}
-            </div>
+            <p class="text-white font-medium">R$ ${parseFloat(c.valorMensalidade||0).toFixed(2)}</p>
+            <p class="text-[10px] ${c.pagamento === 'pendente' ? 'text-orange-500 font-bold' : 'text-zinc-500'}">Venc: ${c.vencimento}</p>
           </td>
           <td class="px-6 py-4 text-right">
-            <button onclick="editarCliente('${c.id}')" class="text-blue-400 hover:text-blue-300 mx-2 transition p-2 bg-blue-500/10 rounded-lg"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="deletarCliente('${c.id}')" class="text-red-500 hover:text-red-400 transition p-2 bg-red-500/10 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+            <button onclick="event.stopPropagation(); deletarCliente('${c.id}')" class="text-red-500 hover:text-red-400 p-2"><i class="fa-solid fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
@@ -272,15 +354,8 @@
       document.getElementById('modal-cliente-titulo').textContent = "Novo Cliente";
       document.getElementById('cli-id').value = "";
       ['nome', 'email', 'senha', 'valor', 'vencimento', 'foto'].forEach(id => document.getElementById(`cli-${id}`).value = "");
-      document.getElementById('cli-nivel').value = "0";
-      document.getElementById('cli-genero').value = "0";
-      document.getElementById('cli-pagamento').value = "pago";
-      document.getElementById('cli-status').value = "ativo";
+      document.getElementById('cli-preview').src = "perfil.jpg";
       document.getElementById('modal-cliente').classList.remove('hidden');
-    };
-
-    window.fecharModalCliente = () => {
-      document.getElementById('modal-cliente').classList.add('hidden');
     };
 
     window.editarCliente = (id) => {
@@ -293,65 +368,89 @@
       document.getElementById('cli-senha').value = c.senha || '';
       document.getElementById('cli-valor').value = c.valorMensalidade || '';
       document.getElementById('cli-vencimento').value = c.vencimento || '';
-      document.getElementById('cli-nivel').value = c.nivel !== undefined ? c.nivel : '0';
-      document.getElementById('cli-genero').value = c.genero !== undefined ? c.genero : '0';
+      document.getElementById('cli-nivel').value = c.nivel || '0';
+      document.getElementById('cli-genero').value = c.genero || '0';
       document.getElementById('cli-pagamento').value = c.pagamento || 'pago';
       document.getElementById('cli-status').value = c.status || 'ativo';
       document.getElementById('cli-foto').value = c.foto || '';
+      document.getElementById('cli-preview').src = c.foto || 'perfil.jpg';
       document.getElementById('modal-cliente').classList.remove('hidden');
     };
 
     window.salvarCliente = async () => {
       const id = document.getElementById('cli-id').value;
-      const email = document.getElementById('cli-email').value.trim();
+      const acesso = document.getElementById('cli-status').value;
       
       const dados = {
-        nome: document.getElementById('cli-nome').value.trim(),
-        email: email,
-        senha: document.getElementById('cli-senha').value.trim(),
+        nome: document.getElementById('cli-nome').value,
+        email: document.getElementById('cli-email').value,
+        senha: document.getElementById('cli-senha').value,
         valorMensalidade: parseFloat(document.getElementById('cli-valor').value) || 0,
         vencimento: parseInt(document.getElementById('cli-vencimento').value) || 1,
-        nivel: parseInt(document.getElementById('cli-nivel').value) || 0,
-        genero: parseInt(document.getElementById('cli-genero').value) || 0,
-        pagamento: document.getElementById('cli-pagamento').value,
-        status: document.getElementById('cli-status').value,
-        foto: document.getElementById('cli-foto').value.trim()
+        nivel: parseInt(document.getElementById('cli-nivel').value),
+        genero: parseInt(document.getElementById('cli-genero').value),
+        pagamento: acesso === 'ativo' ? 'pago' : document.getElementById('cli-pagamento').value,
+        status: acesso,
+        foto: document.getElementById('cli-foto').value
       };
 
-      if(!dados.nome || !dados.email || !dados.senha) {
-        alert("Nome, E-mail e Senha são obrigatórios.");
-        return;
-      }
-
-      if(!id) {
-        const existe = await DB.getClienteByEmail(email);
-        if(existe) {
-          alert("Já existe um cliente com este e-mail.");
-          return;
-        }
-        dados.dataCadastro = new Date().toLocaleDateString('pt-BR');
-        await DB.addCliente(dados);
-      } else {
-        const existe = await DB.getClienteByEmail(email);
-        if(existe && existe.id !== id) {
-          alert("Já existe outro cliente com este e-mail.");
-          return;
-        }
-        await DB.updateCliente(id, dados);
-      }
-      
-      window.fecharModalCliente();
+      id ? await DB.updateCliente(id, dados) : await DB.addCliente(dados);
+      document.getElementById('modal-cliente').classList.add('hidden');
       carregarDados();
-      alert("Cliente salvo com sucesso!");
     };
 
-    window.deletarCliente = async (id) => {
-      if(confirm("Tem certeza que deseja apagar este cliente permanentemente?")) {
-        await DB.deleteCliente(id);
+    // FUNÇÕES DE PRODUTOS
+    window.abrirModalProduto = () => {
+        document.getElementById('prod-id').value = "";
+        ['nome', 'preco', 'foto', 'link'].forEach(id => document.getElementById(`prod-${id}`).value = "");
+        document.getElementById('modal-produto').classList.remove('hidden');
+    };
+
+    window.fecharModalProduto = () => document.getElementById('modal-produto').classList.add('hidden');
+
+    window.salvarProduto = async () => {
+        const id = document.getElementById('prod-id').value;
+        const dados = {
+            nome: document.getElementById('prod-nome').value,
+            preco: parseFloat(document.getElementById('prod-preco').value),
+            categoria: document.getElementById('prod-cat').value,
+            foto: document.getElementById('prod-foto').value,
+            link: document.getElementById('prod-link').value
+        };
+        id ? await DB.updateProduto(id, dados) : await DB.addProduto(dados);
+        fecharModalProduto();
         carregarDados();
-      }
     };
 
+    function renderizarProdutosAdmin() {
+        const tbody = document.getElementById('lista-produtos-admin');
+        tbody.innerHTML = produtosGlobais.map(p => `
+            <tr>
+                <td class="px-6 py-4 flex items-center gap-3"><img src="${p.foto}" class="w-8 h-8 rounded">${p.nome}</td>
+                <td class="px-6 py-4">${p.categoria}</td>
+                <td class="px-6 py-4">R$ ${p.preco.toFixed(2)}</td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="editarProd('${p.id}')" class="text-blue-400 mx-2"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deletarProd('${p.id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.editarProd = (id) => {
+        const p = produtosGlobais.find(x => x.id === id);
+        document.getElementById('prod-id').value = p.id;
+        document.getElementById('prod-nome').value = p.nome;
+        document.getElementById('prod-preco').value = p.preco;
+        document.getElementById('prod-cat').value = p.categoria;
+        document.getElementById('prod-foto').value = p.foto;
+        document.getElementById('prod-link').value = p.link;
+        document.getElementById('modal-produto').classList.remove('hidden');
+    }
+
+    window.deletarProd = async (id) => { if(confirm("Apagar produto?")) { await DB.deleteProduto(id); carregarDados(); } }
+    window.deletarCliente = async (id) => { if(confirm("Apagar cliente?")) { await DB.deleteCliente(id); carregarDados(); } }
+    window.fecharModalCliente = () => document.getElementById('modal-cliente').classList.add('hidden');
   </script>
 </body>
 </html>
