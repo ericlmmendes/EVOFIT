@@ -1,6 +1,6 @@
 // bd.js - Banco de dados (Firebase)
 // Este arquivo expõe o objeto global `DB` com métodos assíncronos de CRUD,
-// atualizado para gerenciar Clientes.
+// atualizado para gerenciar Clientes e Produtos da Loja.
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js';
 import {
@@ -146,10 +146,26 @@ async function deleteCliente(id) {
   return await deleteItem('clientes', id);
 }
 
-// Busca cliente específico pelo email
 async function getClienteByEmail(email) {
   const clientes = await getClientes();
   return clientes.find(c => c.email === email) || null;
+}
+
+// ============== GERENCIAMENTO DE PRODUTOS (LOJA) ==============
+async function getProdutos() {
+  return await getAll('produtos');
+}
+
+async function addProduto(produto) {
+  return await addItem('produtos', produto);
+}
+
+async function updateProduto(id, produto) {
+  return await updateItem('produtos', id, produto);
+}
+
+async function deleteProduto(id) {
+  return await deleteItem('produtos', id);
 }
 
 // ============== GERENCIAMENTO DE TREINOS ==============
@@ -171,6 +187,10 @@ const DB = {
   updateCliente,
   deleteCliente,
   getClienteByEmail,
+  getProdutos,
+  addProduto,
+  updateProduto,
+  deleteProduto,
   getTreinosGlobais,
   saveTreinosGlobais
 };
