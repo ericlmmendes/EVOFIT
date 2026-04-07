@@ -382,6 +382,27 @@
         <p id="xp-texto" class="text-xs text-zinc-500 mt-2 text-right">0/30 dias consecutivos para o Nível 2</p>
       </div>
 
+      <!-- STATUS DE PAGAMENTO -->
+      <div class="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 mb-6">
+        <h3 class="text-sm font-bold text-emerald-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+          <i class="fa-solid fa-credit-card"></i> Status de Pagamento
+        </h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400 text-sm">Situação</span>
+            <span id="status-pagamento-badge" class="px-3 py-1 rounded-full text-[10px] font-bold">CARREGANDO...</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400 text-sm">Próximo Vencimento</span>
+            <span id="vencimento-txt" class="text-white font-bold text-sm">--</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400 text-sm">Valor da Parcela</span>
+            <span id="valor-parcela-txt" class="text-white font-bold text-sm">--</span>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div class="bg-zinc-900 rounded-3xl p-6 text-center border border-zinc-800 shadow-sm">
           <i class="fa-solid fa-calendar-check text-emerald-500 text-2xl mb-2"></i>
@@ -924,7 +945,9 @@
           email: cliente.email, 
           nivel: cliente.nivel !== undefined ? cliente.nivel : 0,
           genero: cliente.genero !== undefined ? cliente.genero : 0,
-          pagamento: cliente.pagamento 
+          pagamento: cliente.pagamento,
+          vencimento: cliente.vencimento,
+          valorMensalidade: cliente.valorMensalidade
         };
         localStorage.setItem('usuario', JSON.stringify(usuario));
         
@@ -1344,13 +1367,24 @@
       medalhaImg.src = `medalha/nivel_${level}.png`;
       medalhaImg.style.display = 'block';
       medalhaImg.nextElementSibling.style.display = 'none';
+
+      // ATUALIZAÇÃO DO STATUS DE PAGAMENTO
+      const statusBadge = document.getElementById('status-pagamento-badge');
+      if (usuario.pagamento === 'pago') {
+        statusBadge.textContent = 'EM DIA';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500';
+      } else {
+        statusBadge.textContent = 'PENDENTE';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-500';
+      }
+      document.getElementById('vencimento-txt').textContent = `Dia ${usuario.vencimento || '--'}`;
+      document.getElementById('valor-parcela-txt').textContent = `R$ ${parseFloat(usuario.valorMensalidade || 0).toFixed(2)}`;
     }
 
     // ====================== RESET ======================
     window.mostrarModalReset = function() { document.getElementById('modal-reset').classList.remove('hidden'); }
     window.cancelarReset = function() { document.getElementById('modal-reset').classList.add('hidden'); }
     window.confirmarReset = async function() {
-      // Como o painel cria as contas, aqui o usuário apaga localmente os próprios dados, mas mantém o login na base.
       localStorage.removeItem('historicoTreinos');
       localStorage.removeItem('profilePhoto');
       localStorage.removeItem('streakData');
@@ -1374,6 +1408,8 @@
             usuario.nivel = cliente.nivel !== undefined ? cliente.nivel : 0;
             usuario.genero = cliente.genero !== undefined ? cliente.genero : 0;
             usuario.pagamento = cliente.pagamento || 'pago';
+            usuario.vencimento = cliente.vencimento;
+            usuario.valorMensalidade = cliente.valorMensalidade;
             localStorage.setItem('usuario', JSON.stringify(usuario));
 
             if (usuario.pagamento === 'pendente') {
@@ -1402,10 +1438,6 @@
         generoAtual = usuario.genero !== undefined ? usuario.genero : 0;
         window.mostrarPagina('home');
 
-        if (usuario.pagamento === 'pendente') {
-          document.getElementById('banner-pagamento').classList.remove('hidden');
-        }
-
       } else {
         document.getElementById('login-modal').classList.remove('hidden');
       }
@@ -1431,6 +1463,15 @@
         }
       } catch (e) {}
     });
+    // FUNÇÃO TELA CHEIA AUTOMÁTICA
+    function enterFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log("Erro ao entrar em tela cheia:", err);
+        });
+      }
+    }
+    
   </script>
 </body>
 </html>
